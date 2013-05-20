@@ -1,3 +1,4 @@
+#include <tchar.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
@@ -5,17 +6,16 @@
 #include <windows.h>
 #include <setupapi.h>
 #include <cfgmgr32.h>
-#include <devguid.h>
 
 #pragma comment(lib, "setupapi.lib")
 
 void printIndent(const unsigned int depth)
 {
 	unsigned int i;
-	for (i = 0; i < depth; i++) printf("\t");
+	for (i = 0; i < depth; i++) _tprintf(_T("\t"));
 }
 
-void printDeviceRegistryProperty(HDEVINFO devInfo, PSP_DEVINFO_DATA devInfoData, DWORD propertyKey, wchar_t* propertyName, const unsigned int depth)
+void printDeviceRegistryProperty(HDEVINFO devInfo, PSP_DEVINFO_DATA devInfoData, DWORD propertyKey, TCHAR* propertyName, const unsigned int depth)
 {
 	DWORD size = 0;
 	DWORD type = 0;
@@ -32,31 +32,32 @@ void printDeviceRegistryProperty(HDEVINFO devInfo, PSP_DEVINFO_DATA devInfoData,
 			buf = (PBYTE)malloc(sizeof(BYTE) * size);
 		} else if (ERROR_INVALID_DATA == error) {
 			printIndent(depth);
-			wprintf(L"%s: (N/A)\n", propertyName);
+			_tprintf(_T("%s: (N/A)\n"), propertyName);
 			break;
 		} else {
-			printf("SetupDiGetDeviceRegistryProperty failed: 0x%08lx\n", error);
-			break;
+			printIndent(depth);
+			_tprintf(_T("SetupDiGetDeviceRegistryProperty failed: 0x%08lx\n"), error);
+			return;
 		}
 	}
 
 	if (buf != NULL) {
 		size_t len;
-		PWSTR str;
+		TCHAR* str;
 		switch (type) {
 		case REG_SZ:
-			str = (PWSTR)buf;
+			str = (TCHAR*)buf;
 			printIndent(depth);
-			wprintf(L"%s: \"%s\"\n", propertyName, str);
+			_tprintf(_T("%s: \"%s\"\n"), propertyName, str);
 			break;
 		case REG_MULTI_SZ:
-			str = (PWSTR)buf;
-			len = wcslen(str);
+			str = (TCHAR*)buf;
+			len = _tcslen(str);
 			while (len > 0) {
 				printIndent(depth);
-				wprintf(L"%s: \"%s\"\n", propertyName, str);
+				_tprintf(_T("%s: \"%s\"\n"), propertyName, str);
 				str += len + 1;
-				len = wcslen(str);
+				len = _tcslen(str);
 			}
 			break;
 		}
@@ -69,48 +70,53 @@ void printDevice(DEVINST devInst, const unsigned int depth)
 {
 	unsigned long status;
 	unsigned long problemNumber;
-	wchar_t devID[MAX_DEVICE_ID_LEN + 1];
+	TCHAR devID[MAX_DEVICE_ID_LEN];
 	CONFIGRET ret;
 	HDEVINFO devInfo;
 	SP_DEVINFO_DATA devInfoData;
 
-	ret = CM_Get_Device_ID(devInst, devID, sizeof(devID), 0);
+	ret = CM_Get_Device_ID(devInst, devID, MAX_DEVICE_ID_LEN, 0);
 	if (ret != CR_SUCCESS) {
-		printf("CM_Get_Device_ID failed: 0x%08lx\n", ret);
+		printIndent(depth);
+		_tprintf(_T("CM_Get_Device_ID failed: 0x%08lx\n"), ret);
 		return;
 	}
 
 	ret = CM_Get_DevNode_Status(&status, &problemNumber, devInst, 0);
 	if (ret != CR_SUCCESS && ret != CR_NO_SUCH_DEVNODE) {
-		printf("CM_Get_DevNode_Status failed: 0x%08lx\n", ret);
+		printIndent(depth);
+		_tprintf(_T("CM_Get_DevNode_Status failed: 0x%08lx\n"), ret);
 		return;
 	}
 
 	devInfo = SetupDiCreateDeviceInfoList(NULL, NULL);
 	if (devInfo == INVALID_HANDLE_VALUE) {
-		printf("SetupDiCreateDeviceInfoList failed: 0x%08lx\n", GetLastError());
+		printIndent(depth);
+		_tprintf(_T("SetupDiCreateDeviceInfoList failed: 0x%08lx\n"), GetLastError());
 		return;
 	}
 
 	devInfoData.cbSize = sizeof(devInfoData);
 	if (! SetupDiOpenDeviceInfo(devInfo, devID, NULL, 0, &devInfoData)) {
-		printf("SetupDiOpenDeviceInfo failed: 0x%08lx\n", GetLastError());
+		printIndent(depth);
+		_tprintf(_T("SetupDiOpenDeviceInfo failed: 0x%08lx\n"), GetLastError());
 		return;
 	}
 
 	printIndent(depth);
-	wprintf(L"DEVICE ID: \"%s\" (0x%08lx,0x%08lx)\n", devID, status, problemNumber);
+	_tprintf(_T("DEVICE ID: \"%s\" (0x%08lx,0x%08lx)\n"), devID, status, problemNumber);
 
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_CLASS, L"SPDRP_CLASS", depth);
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_CLASSGUID, L"SPDRP_CLASSGUID", depth);
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_FRIENDLYNAME, L"SPDRP_FRIENDLYNAME", depth);
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_DEVICEDESC, L"SPDRP_DEVICEDESC", depth);
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_MFG, L"SPDRP_MFG", depth);
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_UPPERFILTERS, L"SPDRP_UPPERFILTERS", depth);
-	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_LOWERFILTERS, L"SPDRP_LOWERFILTERS", depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_CLASS, _T("SPDRP_CLASS"), depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_CLASSGUID, _T("SPDRP_CLASSGUID"), depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_FRIENDLYNAME, _T("SPDRP_FRIENDLYNAME"), depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_DEVICEDESC, _T("SPDRP_DEVICEDESC"), depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_MFG, _T("SPDRP_MFG"), depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_UPPERFILTERS, _T("SPDRP_UPPERFILTERS"), depth);
+	printDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_LOWERFILTERS, _T("SPDRP_LOWERFILTERS"), depth);
 
 	if (! SetupDiDestroyDeviceInfoList(devInfo)) {
-		printf("SetupDiDestroyDeviceInfoList failed: 0x%08lx\n", GetLastError());
+		printIndent(depth);
+		_tprintf(_T("SetupDiDestroyDeviceInfoList failed: 0x%08lx\n"), GetLastError());
 		return;
 	}
 }
@@ -123,7 +129,8 @@ void recChild(DEVINST devInst, const unsigned int depth)
 	ret = CM_Get_Child(&child, devInst, 0);
 	if (ret != CR_SUCCESS) {
 		if (ret != CR_NO_SUCH_DEVNODE) {
-			printf("CM_Get_Child failed: 0x%08lx\n", ret);
+			printIndent(depth);
+			_tprintf(_T("CM_Get_Child failed: 0x%08lx\n"), ret);
 		}
 		return;
 	}
@@ -146,13 +153,13 @@ int main(int argc, char** argv)
 
 	ret = CM_Locate_DevNode(&devInst, NULL, CM_LOCATE_DEVNODE_NORMAL);
 	if (ret != CR_SUCCESS) {
-		printf("CM_Locate_DevNode failed: 0x%08lx\n", ret);
+		_tprintf(_T("CM_Locate_DevNode failed: 0x%08lx\n"), ret);
 		return EXIT_FAILURE;
 	}
 
 //	ret = CM_Reenumerate_DevNode(devInst, 0);
 //	if (ret != CR_SUCCESS) {
-//		printf("CM_Reenumerate_DevNode failed: 0x%08lx\n", ret);
+//		_tprintf(_T("CM_Reenumerate_DevNode failed: 0x%08lx\n"), ret);
 //		return EXIT_FAILURE;
 //	}
 
