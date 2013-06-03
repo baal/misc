@@ -30,7 +30,8 @@ char* u8getchar(unsigned char* buf, size_t* buf_size, const char* s)
 	unsigned char cs[UTF8_CHAR_BYTE];
 
 	if (*first == 0) size = 0;
-	else if (0xC0 <= *first && *first <= 0xDF) size = 2;
+	else if (0x00 <= *first && *first <= 0x7F) size = 1;
+	else if (0xC2 <= *first && *first <= 0xDF) size = 2;
 	else if (0xE0 <= *first && *first <= 0xEF) size = 3;
 	else if (0xF0 <= *first && *first <= 0xF7) size = 4;
 	else if (0xF8 <= *first && *first <= 0xFB) size = 5;
