@@ -132,6 +132,21 @@ char* u8getcode(unsigned char* buf, size_t* buf_size, const char* s)
 	return next;
 }
 
+int isUTF8(const char* s)
+{
+	size_t size;
+	unsigned char* next = (unsigned char*) s;
+	unsigned char cs[UTF8_CHAR_BYTE];
+
+	while (*next != '\0') {
+		size = sizeof(cs);
+		next = u8getchar(cs, &size, next);
+		if (! next) return 0;
+	}
+
+	return 1;
+}
+
 size_t u8strlen(const char* s)
 {
 	size_t len = 0;
