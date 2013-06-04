@@ -16,6 +16,8 @@ char* u8getchar(unsigned char* buf, size_t* buf_size, const char* s);
 
 char* u8getcode(unsigned char* buf, size_t* buf_size, const char* s);
 
+int isUTF8(const char* s);
+
 size_t u8strlen(const char* s);
 
 int u8substring(char* dst, size_t* size, const char* src, const size_t start, const size_t end);
