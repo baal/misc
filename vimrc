@@ -40,8 +40,13 @@ endif
 
 if has('gui_running')
 	set ambiwidth=double
-	set guifont=Inconsolata:h12:cANSI
-	set guifontwide=M+_2m_medium:h10:cSHIFTJIS
+	if has('win32')
+		set guifont=Inconsolata:h12:cANSI
+		set guifontwide=M+_2m_medium:h10:cSHIFTJIS
+	elseif has('unix')
+		set guifont=Inconsolata\ Medium\ 12
+		set guifontwide=IPAGothic\ Regular\ 12
+	endif
 endif
 
 if &t_Co > 2 || has("gui_running")
