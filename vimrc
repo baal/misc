@@ -44,8 +44,9 @@ if has('gui_running')
 		set guifont=Inconsolata:h12:cANSI
 		set guifontwide=M+_2m_medium:h10:cSHIFTJIS
 	elseif has('unix')
-		set guifont=Inconsolata\ Medium\ 12
-		set guifontwide=IPAGothic\ Regular\ 12
+		'set guifont=Inconsolata\ Medium\ 12
+		'set guifontwide=IPAGothic\ Regular\ 12
+		set guifont=M+\ 1m\ Medium\ 12
 	endif
 endif
 
